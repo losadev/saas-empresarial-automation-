@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role { 
+  ADMIN 
+  MEMBER 
+  }
+
+enum Plan { 
+  FREE 
+  PRO
+}
+enum LeadStatus { 
+  NEW 
+  IN_PROGRESS 
+  CLOSED 
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  image        String?
+  memberships  Membership[]
+  createdAt    DateTime     @default(now())
+}
+
+model Organization {
+  id            String        @id @default(cuid())
+  name          String
+  plan          Plan          @default(FREE)
+  leadsLimit    Int           @default(50)
+  members       Membership[]
+  leads         Lead[]
+  appointments  Appointment[]
+  createdAt     DateTime      @default(now())
+}
+
+model Membership {
+  id             String        @id @default(cuid())
+  role           Role
+  userId         String
+  organizationId String
+  user           User          @relation(fields: [userId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model Lead {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String?
+  email          String?
+  phone          String?
+  source         String?
+  message        String
+  aiSummary      String?
+  aiTags         String[]     // array de texto en Postgres
+  status         LeadStatus    @default(NEW)
+  createdAt      DateTime      @default(now())
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+}
+
+model Appointment {
+  id             String        @id @default(cuid())
+  organizationId String
+  customerName   String
+  customerPhone  String?
+  service        String
+  startAt        DateTime
+  endAt          DateTime
+  notes          String?
+  createdAt      DateTime      @default(now())
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+}
